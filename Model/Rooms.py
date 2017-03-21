@@ -15,7 +15,7 @@ class Office(Room):
         self.persons_allocated = []
 
     def __str__(self):
-        return self.room_name + ' ' + self.room_type + ' ' + str(self.persons_allocated)
+        return self.room_name + ' ' + self.room_type
 
 
 class LivingSpace(Room):
@@ -28,7 +28,7 @@ class LivingSpace(Room):
         self.persons_allocated = []
 
     def __str__(self):
-        return self.room_name + ' ' + self.room_type + ' ' + str(self.persons_allocated)
+        return self.room_name + ' ' + self.room_type
 
-d = Office("narnia")
-print(d)
+# d = Office("narnia")
+# print(d)
