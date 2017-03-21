@@ -1,75 +1,68 @@
 from Model.People import Staff, Fellow
+
 from Model.Rooms import Office, LivingSpace
+
 from random import choice
+
+import sqlite3
 
 
 class Amity(object):
-    all_rooms = []
-    all_persons = []
-    #
-    # def __init__(self):
-    #     self.all_rooms = []
-    #     self.all_persons = []
+
+    def __init__(self):
+       self.all_rooms = {"office": [], "livingspace": []}
+       self.all_persons = []
+       self.unallocated_office = []
+       self.unallocated_livingspace = []
 
     def create_room(self, room_type, room_name):
         """ Creates rooms in Amity """
 
         # check if string
-        if not isinstance(room_type, str):
-            raise TypeError('room_type must be a string!')
+        if not isinstance(room_type, str) and not isinstance(room_name, str):
+            raise TypeError('room type and room name must be a string!')
 
-        if not isinstance(room_name, str):
-            raise TypeError('room_name must be a string!')
+        # # check room exists
+        rooms = self.all_rooms['office'] + self.all_rooms['livingspace']
 
-        # check room exists
-        all_rooms = [room.room_name for room in self.all_rooms]
-        if room_name in all_rooms:
+        check_name = [room.room_name for room in rooms if room.room_name == room_name]
+
+        if check_name:
             return 'Room already exists!'
 
-        if room_name.lower() not in ('livingspace', 'office'):
+        # if room_type.lower() not in ('livingspace', 'office'):
+        #     return "Invalid room type"
 
-            room_mapping = {'livingspace': LivingSpace, 'office': Office}
+        room_mapping = {'livingspace': LivingSpace, 'office': Office}
 
-            new_room = room_mapping[room_type](room_name)
-            self.all_rooms.append(new_room)
+        new_room = room_mapping[room_type](room_name)
+
+        # add an office and a livingspace
+        if room_type.lower() == "office":
+            self.all_rooms['office'].append(new_room)
+
+            return 'Offices created Successfully!'
+        else:
+            self.all_rooms['livingspace'].append(new_room)
+
+            print('Living spaces created Successfully!')
 
     def add_person(self, first_name, last_name, designation, accommodation_request=None):
         """ Adds a person to the system and allocates the person to a random room"""
 
-        # if first_name == '' or last_name == '':
-        #     return "Name cannot be blank!"
-        #
-        # if designation not in ['staff', 'fellow']:
-        #     return "Invalid Input! Designation can only be staff or fellow"
-        #
-        # if accommodation_request not in ['Y', 'y', 'N', 'n']:
-        #     return "Invalid Input! Only Y/N allowed"
-        if not isinstance(first_name, str):
-            raise TypeError('First Name cannot be a number!')
-
-        if not isinstance(last_name, str):
-            raise TypeError('Last Name cannot be a number!')
+        if not isinstance(first_name, str) and not isinstance(last_name, str):
+            raise TypeError('First Name and Last Name cannot be a number!')
 
         # add staff
-        if designation == 'staff':
+        if designation.lower() == 'staff':
             staff = Staff(first_name, last_name)
 
             # add staff to all persons list
             self.all_persons.append(staff)
 
-            # pick an office from all rooms list
-            for room in self.all_rooms:
-                if len(room.persons_allocated) < room.max_capacity and room.room_type == 'office':
-
-                    # add office to staff
-                    staff.current_occupancy.append(room)
-
-                    # add staff to office
-                    room.persons_allocated.append(staff)
-                    break
-                else:
-                    print('full')
-                    return "Room not available or is full!"
+            # add staff to office
+            self.allocate_office(staff)
+            return 'staff successful'
 
         else:
             fellow = Fellow(first_name, last_name, accommodation_request=None)
@@ -77,36 +70,134 @@ class Amity(object):
             # add fellow to all persons list
             self.all_persons.append(fellow)
 
-            # pick an office from all rooms list
-            for room in self.all_rooms:
-                if len(room.persons_allocated) < room.max_capacity and room.room_type == 'office':
+            # add fellow to office
+            self.allocate_office(fellow)
+            print(fellow.first_name + ' added successfully')
 
-                    # add office to staff
-                    fellow.current_occupancy.append(room)
+            if accommodation_request == 'y' and designation.lower() == 'fellow':
 
-                    # add fellow to office
-                    room.persons_allocated.append(fellow)
-                    break
-                else:
-                    return "Room not available or is full!"
+                # add fellow to all persons list
+                self.all_persons.append(fellow)
 
-            if accommodation_request == 'y':
+                # add fellow to livingspace
+                self.allocate_living(fellow)
+                return fellow + ' added successfully!'
 
-                # pick a livingspace from all rooms list
-                for room in self.all_rooms:
-                    if len(room.persons_allocated) < room.max_capacity and room.room_type == 'livingspace':
+    def allocate_office(self, person):
 
-                        # add livingspace to fellow
-                        fellow.current_occupancy.append(room)
+        # office does not exist add to unallocated list
+        if not self.all_rooms['office']:
+            self.unallocated_office.append(person)
+            return 'There is no office in the system!'
 
-                        # add fellow to livingspace
-                        room.persons_allocated.append(fellow)
-                        break
-                    else:
-                        return "Room not available or is full!"
+        # check for empty offices
+        empty_offices = [all(office for office in self.all_rooms['office']
+                             if len(office.persons_allocated) == office.max_capacity)]
+
+        # no empty office add to unallocated list
+        if not empty_offices:
+            self.unallocated_office.append(person)
+            return 'All offices are full!'
+
+        # get a list of all offices
+        all_offices = [office for office in self.all_rooms['office']
+                       if len(office.persons_allocated) < office.max_capacity]
+
+        # get a random office
+        random_office = choice(all_offices)
+
+        # add office to person
+        person.current_occupancy.append(random_office)
+
+        # add person to office
+        random_office.persons_allocated.append(person)
+
+    def allocate_living(self, person):
+
+            # living space does not exist add to unallocated list
+            if not self.all_rooms['livingspace']:
+                self.unallocated_livingspace.append(person)
+                return 'The living space does not exist!'
+
+            # check for empty living space
+            empty_livingspace = [all(livingspace for livingspace in self.all_rooms['livingspace']
+                                     if len(livingspace.persons_allocated) == livingspace.max_capacity)]
+
+            # no empty living space add to unallocated list
+            if not empty_livingspace:
+                self.unallocated_livingspace.append(person)
+                return 'All living spaces are full!'
+
+            # get a list of all living spaces
+            all_living = [livingspace for livingspace in self.all_rooms['livingspace']
+                          if len(livingspace.persons_allocated) < livingspace.max_capacity]
+
+            # get a random office
+            random_living = choice(all_living)
+
+            # add living spaces to person
+            person.current_occupancy.append(random_living)
+
+            # add person to living spaces
+            random_living.persons_allocated.append(person)
 
     def reallocate_person(self, identifier, room_name):
         """ Reallocate the person with  person_identifier  to  new_room_name """
+
+        room_to_reallocate = None
+        previous_room = None
+        person_found = None
+
+        # check for available rooms
+        all_rooms = self.all_rooms['office'] + self.all_rooms['livingspace']
+        rooms_list = [room.room_name for room in all_rooms]
+        if room_name not in rooms_list:
+            return "Room not found!"
+
+        # person_found = [person for person in self.all_persons if person.identifier == identifier]
+
+        # pick person from list of persons
+        for person in self.all_persons:
+            if person.identifier == identifier:
+                person_found = person
+                break
+            else:
+                return "Person not Found!"
+
+        # pick room to reallocate
+        all_rooms = self.all_rooms['office'] + self.all_rooms['livingspace']
+
+        for room in all_rooms:
+            if room.room_name == room_name:
+                room_to_reallocate = room
+                break
+            else:
+                return "Room Not Found!"
+
+        # Check room still has space
+        if len(room_to_reallocate.persons_allocated) > room_to_reallocate.max_capacity:
+           return "Room Full!"
+
+        # Check Staff cannot be allocated to a living Space
+        if person_found.designation == "Staff" and room_to_reallocate.room_type == "livingspace":
+            return "Allocating Staff to living space not Allowed!"
+
+        # pick the previous room a person was in
+        all_rooms = self.all_rooms['office'] + self.all_rooms['livingspace']
+        for room in all_rooms:
+            if room in person_found.current_occupancy:
+                previous_room = room
+                break
+
+        # check if person is moving to the same room type
+        if previous_room.room_type != room_to_reallocate.room_type:
+            return "Reallocations can only be done to the same room Types!"
+
+        # remove person from room he was in
+        previous_room.remove(person_found)
+
+        # assign person to a new room
+        room_to_reallocate.append(person_found)
 
     def load_people(self, filename):
         """ Adds people to rooms from a txt file """
@@ -121,127 +212,183 @@ class Amity(object):
 
         # get details from the text file
         try:
-            for person in open(filename):
-                person = person.strip()
-                person_details = person.split()
-                first_name = person_details[0]
-                last_name = person_details[1]
-                designation = person_details[2]
+            with open(filename, 'r') as persons_file:
+                persons = persons_file.readlines()
 
-                # add people found to rooms
-                if len(person) == 4:
-                    accommodation = person_details[3]
-                else:
-                    accommodation = None
-                self.add_person(first_name, last_name, designation, accommodation)
+                for person in persons:
+                    person_details = person.split()
+                    first_name = person_details[0]
+                    last_name = person_details[1]
+                    designation = person_details[2]
+                    accommodation = person_details[-1]
+
+                    if accommodation.lower() == 'Y':
+                        self.add_person(first_name, last_name, designation, accommodation)
+                    else:
+                        self.add_person(first_name, last_name, designation)
 
         except FileNotFoundError as e:
             print(e)
 
-        except Exception:
-            print("Something went wrong, please try again!")
+        except Exception as e:
+            print(e)
 
-    def print_allocations(self, room_name):
+    def print_allocations(self, filename=None):
         """ Prints a list of allocations onto the screen """
-        # fellows_allocated + persons_allocated
-        #for person in self.all_persons:
-        print('\n'.join(str(person) for person in self.all_persons))
+        if filename is not None:
+            filename = ''
+        print('OFFICES')
+        for room in self.all_rooms['office']:
+            print('\n', room.room_name)
+            print('---------------------')
+            if room.max_capacity > 0:
+                print(', '.join(person.first_name + ' ' + person.last_name for person in room.persons_allocated))
 
-    # print
-    # '\n'.join(str(p) for p in myList)
+        print('\n', 'LIVING SPACES')
+        for room in self.all_rooms['livingspace']:
+            print('\n', room.room_name)
+            print('---------------------')
+            if room.max_capacity > 0:
+                print(', '.join(person.first_name + ' ' + person.last_name for person in room.persons_allocated))
 
-    def print_unallocated(self):
+        if not filename:
+            with open(filename, 'w') as export_file:
+                all_rooms = self.all_rooms['office'] + self.all_rooms['livingspace']
+                for room in all_rooms:
+                    export_file.write(room.room_name + '\n')
+                    export_file.write('---------------- \n')
+                    if room.max_capacity > 0:
+                        export_file.write('\n'.join(person.first_name + ' ' + person.last_name + ' ' + person.designation
+                                                    for person in room.persons_allocated)+'\n\n')
+                print('Successfully exported room allocations to ' + filename)
+
+    def print_unallocated(self, filename=None):
         """ Prints a list of unallocated people to the screen """
 
-        # unallocated persons = all_persons - office(persons_allocated) + living(persons_allocated
+        if filename is None:
 
+            print('UNALLOCATED TO OFFICES')
+            print('------------------------')
+            print('\n'.join(str(person) for person in self.unallocated_office), '\n')
+
+            print('UNALLOCATED TO LIVING SPACE')
+            print('----------------------------')
+            print('\n'.join(str(person) for person in self.unallocated_livingspace), '\n')
+
+        else:
+            try:
+                with open(filename, 'w') as export_file:
+                    for person in self.unallocated_office:
+                        export_file.write('UNALLOCATED TO OFFICES \n')
+                        export_file.write('-------------------------\n')
+                        export_file.write('\n'.join(str(person.identifier) + ' ' + person.first_name + ' ' +
+                                                    person.last_name + ' ' + person.designation
+                                                    for person in self.unallocated_office) + '\n\n')
+                        break
+
+                    for person in self.unallocated_livingspace:
+                        export_file.write('UNALLOCATED TO LIVING SPACES \n')
+                        export_file.write('-------------------------------\n')
+                        export_file.write('\n'.join(str(person) for person in self.unallocated_livingspace) + '\n\n')
+                        break
+                    print('Successfully exported unallocated people file to ' + filename)
+
+            except FileNotFoundError as e:
+                print(e)
+
+            except Exception as e:
+                print(e)
 
     def print_room(self, room_name):
         """ Prints the names of all the people in the room_name  on the screen"""
 
-        # if not isinstance(room_name, str):
-        #     raise TypeError("Room name cannot be a number!")
+        # get a list of all rooms
+        all_rooms = self.all_rooms['office'] + self.all_rooms['livingspace']
 
-        # get list of rooms to check if room name exists
-        room_to_print = [room.room_name for room in self.all_rooms]
+        room = [room for room in all_rooms if room.room_name == room_name]
 
-        # print people found in the room
-        if room_name in room_to_print:
-            print(room_name)
-            print('-----------------------------------')
-            print(room_name.persons_allocated)
+        # check if room name exists
+        if not room:
+            print('room name not found')
 
+        # print the room name
+        print(room_name)
+        print('--------------------')
 
-
-
-
-
-        else:
-            return "Room not found!"
-
-
-
-
+        # print persons allocated to the room name
+        for person in room[0].persons_allocated:
+            print(person.first_name + ' ' + person.last_name)
 
     def save_state(self):
         pass
+
+        db_connect = sqlite3.connect('amity_db')
+        connect = db_connect.cursor()
+
+        # # create table in the database
+        connect.execute("CREATE TABLE IF NOT EXISTS all_rooms"
+                        "(id INTEGER PRIMARY KEY UNIQUE, room_name TEXT, room_type TEXT ) ")
+
+        all_rooms = self.all_rooms['office'] + self.all_rooms['livingspace']
+        get_rooms = [room.room_name + ' ' + room.room_type for room in all_rooms]
+
+        connect.execute("INSERT INTO all_rooms VALUES (NULL, ? , ? );", get_rooms)
+
+
+
+
+
 
     def load_state(self):
         pass
 
 
 
-
+#
 dojo = Amity()
-# dojo.create_room('livingspace', 'Oculus')
-# dojo.create_room('office', 'valhalla')
+# #
 dojo.create_room('office', 'valhalla')
-dojo.create_room('office', 'krypton')
+dojo.create_room('office', 'valhalla')
+dojo.create_room('office', 'kampala')
 dojo.create_room('office', 'kampala')
 dojo.create_room('livingspace', 'oculus')
 dojo.create_room('livingspace', 'narnia')
-
-
-# dojo.add_person('Dennis', 'Mwangi', 'fello' ,'y')
-# dojo.add_person('Dennis', 'Mwangi', 'fellw' ,'y')
-# dojo.add_person('Dennis', 'Mwangi', 'sta' ,'y')
-# dojo.add_person('Dennis', 'Mwangi1', 'fellow' ,'n')
-# dojo.add_person('Dennis', 'Mwangi2', 'fellow' ,'y')
-# dojo.add_person('Dennis', 'Mwangi3', 'fellow' ,'n')
-# dojo.add_person('Dennis', 'Mwangi4', 'fellow' ,'y')
-# dojo.add_person('Dennis', 'Mwangi5', 'fellow' ,'y')
-# dojo.add_person('Dennis', 'Mwangi6', 'fellow' ,'y')
-# dojo.add_person('Dennis', 'Mwangi7', 'fellow' ,'y')
-# dojo.add_person('Dennis', 'Mwangi8', 'fellow' ,'y')
-# dojo.add_person('Dennis', 'Mwangi9', 'fellow' ,'y')
+dojo.create_room('livingspace', 'swift')
+# # #
+# dojo.add_person('James', 'Mwangi', 'fellow', 'y')
 #
-# dojo.add_person('Dennis', 'Mwangi', 'staff' ,'y')
-# dojo.add_person('Dennis', 'Mwangi', 'staff' ,'y')
-# dojo.add_person('Dennis', 'Mwangi', 'staff' ,'y')
-# dojo.add_person('Dennis', 'Mwangi', 'staff' ,'y')
-# dojo.add_person('Dennis', 'Mwangi', 'staff' ,'y')
-# dojo.add_person('Dennis', 'Mwangi', 'staff' ,'y')
-# dojo.add_person('Dennis', 'Mwangi', 'staff' ,'y')
-# dojo.add_person('Dennis', 'Mwangi', 'staff' ,'y')
-# dojo.add_person('Dennis', 'Mwangi', 'staff' ,'y')
-# dojo.add_person('Dennis', 'Mwangi', 'staff' ,'y')
+# dojo.add_person('Lio', 'Githinji', 'staff')
+# dojo.add_person('Jere', 'murunyu', 'staff')
+# dojo.add_person('Sue', 'Kigwai', 'staff', 'y')
+# dojo.add_person('Dennis', 'Mwangi', 'staff', 'y')
+# dojo.add_person('Joseph', 'Waruinge', 'staff', 'y')
 
 
-#dojo.reallocate_person(4435144600,'valhalla')
+#print(dojo.reallocate_person(4542752, 'oculus'))
 
-dojo.load_people('upload.txt')
+#dojo.load_people('upload.txt')
 
-# dojo.print_room('valhalla')
 
-dojo.print_allocations('valhalla')
-#dennis = Staff('Dennis','Mwangi')
-# print(dennis.identifier)
-#print(dojo.all_rooms)
+# dojo.print_room('swift')
+#
+# dojo.print_allocations('allocations.txt')
+
+# dojo.print_unallocated()
+
+dojo.save_state()
+
+# dennis = Staff('Dennis','Mwangi')
+#print(dennis.identifier)
+
 #
 # print(dojo.all_persons)
-#
+# print(dojo.unallocated_to_livingspace)
+# # #
 # print('all persons', len(dojo.all_persons))
+# print('unallocated to room', len(dojo.unallocated_to_livingspace))
+# print('unallocated to office', len(dojo.unallocated_to_office))
+
 #
-# print('All rooms', len(dojo.all_rooms))
-#
-# print(dojo.all_rooms)
+# print('All rooms', len(dojo.all_rooms['office']), len(dojo.all_rooms['livingspace']))
+
+#print(dojo.all_rooms)
