@@ -335,7 +335,6 @@ class Amity(object):
         Amity.unallocated_office = pickle.loads(data[3])
         Amity.unallocated_livingspace = pickle.loads(data[4])
 
-
         return 'Successfully loaded data from the Database!'
 
 
