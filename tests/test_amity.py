@@ -6,147 +6,102 @@ from Model.Rooms import Office, LivingSpace
 
 
 class TestAmity(unittest.TestCase):
-
     def setUp(self):
         self.facility = Amity()
+        self.facility.create_room('office', 'tsavo')
+        self.facility.create_room('livingspace', 'home')
 
+        self.facility.add_person('dennis', 'mwangi', 'fellow', 'y')
+        self.facility.add_person('john', 'doe', 'staff', 'y')
 
-    # def tearDown(self):
-    #     self.facility = Amity()
 
     def test_create_room(self):
 
-        # Assert no of rooms before a new one is added
-        count1 = len(self.facility.all_rooms)
-        self.assertEquals(len(self.facility.all_rooms), 2)
+        self.assertEqual('tsavo already exists!',
+                         self.facility.create_room('office', 'tsavo'))
 
-        live1 = LivingSpace('valhalla')
-        self.assertIsInstance(live1.room_type, str, msg='room_type must be a string!')
-        self.assertIsInstance(live1.room_name, str, msg='room name must be a string!')
+        self.assertEqual('home already exists!',
+                         self.facility.create_room('livingspace', 'home'))
 
-        # Assert new room has been created
-        self.facility.create_room('office', 'Ruby')
-        self.assertEqual(len(self.facility.all_rooms), 2)
+    def test_no_office_in_the_system(self):
+        self.assertNotEqual('There is no office in the system!',
+                            self.facility.allocate_office(Fellow))
 
-        # Assert room list has incremented
-        count2 = len(self.facility.all_rooms)
-        self.assertEqual(count1, count2)
+    def test_no_livingspace_in_the_system(self):
+        self.assertNotEqual('The living space does not exist!',
+                            self.facility.allocate_living(Staff))
 
-        # Assert maximum office capacity
-        office1 = Office('camelot')
-        self.assertEqual(office1.max_capacity, 6)
+    def test_offices_are_full(self):
+        self.assertNotEqual('All offices are full!',
+                            self.facility.allocate_living(Staff))
 
-        # Assert room created is an office
-        self.assertEqual(office1.room_type, 'office')
+    def test_file_not_loaded(self):
+        self.assertEqual('File not found, Please try again...',
+                         self.facility.load_people('files/not_loaded.txt'))
 
-        # Assert maximum living space capacity
-        room1 = LivingSpace('dojo')
-        self.assertEqual(room1.max_capacity, 4)
+    def test_file_loaded_successfully(self):
+        self.assertEqual('upload.txt successfully loaded to system...',
+                         self.facility.load_people('upload.txt'))
 
-        # Assert room created is a living space
-        self.assertEqual(room1.room_type, 'livingspace')
+    def test_unallocated_not_exported(self):
+        self.assertEqual('File not found, Please try again!',
+                         self.facility.print_unallocated('files/name'))
 
-    def test_add_person(self):
+    def test_unallocated_exported(self):
+        self.assertEqual('Successfully exported unallocated people file to unallocated.txt',
+                         self.facility.print_unallocated('unallocated.txt'))
 
-        room = LivingSpace('oculus')
-        new_staff = Staff('Dennis', 'Mwangi')
-        room.persons_allocated.append(new_staff)
-        new_staff.current_occupancy.append(room)
+    def test_file_exported(self):
+        self.assertEqual('Successfully exported room allocations to export.txt',
+                         self.facility.print_allocations('export.txt'))
 
-        self.assertIsInstance(new_staff.first_name, str, msg='First Name cannot be a number')
-        self.assertIsInstance(new_staff.last_name, str, msg='Last Name cannot be a number!')
+    def test_print_room(self):
+        self.assertEqual('room name not found',
+                         self.facility.print_room('dojo'))
 
-        self.assertIn(new_staff, room.persons_allocated, msg='person added to new room')
-        self.assertIn(room, new_staff.current_occupancy, msg='room has a person')
+    def test_livingspace_does_not_exist(self):
+        self.assertNotEqual('The living space does not exist!',
+                            self.facility.allocate_living(Fellow))
 
-        # Assert no of people before another person is added
-        count1 = len(self.facility.all_persons)
+    def test_livingspace_is_full(self):
+        self.assertNotEqual('All living spaces are full!',
+                            self.facility.allocate_living(Staff))
 
-        # Assert new person has been added
-        self.facility.add_person('Dennis', 'Mwangi', 'Y')
-        # self.assertEqual(len(Amity.fellows), 1)
-        self.assertEqual(len(self.facility.all_persons), 1)
+    def test_person_not_found(self):
+        self.assertEqual('Person with id 1313434 not Found!',
+                         self.facility.reallocate_person(1313434, 'home'))
 
-        # Assert all_persons list has been incremented
-        count2 = len(self.facility.all_persons)
-        self.assertNotEqual(count1, count2)
+    def test_room_not_found(self):
+        self.assertEqual('Room not found!',
+                         self.facility.reallocate_person('john', 'dojo'))
 
-    def test_allocate_office(self):
-        person = Staff('Dennis', 'Mwangi')
-        room = Office('Narnia')
+    # def test_room_to_reallocate_not_found(self):
+    #     self.assertEqual('Room to reallocate not Found!',
+    #                      self.facility.reallocate_person(4309687600, 'nania'))
 
-        self.assertNotIn(room, self.facility.all_rooms, msg='There is no office in the system!')
-        self.assertNotEqual(len(room.persons_allocated), room.max_capacity, msg='Office not full!')
+    def test_reallocation_to_a_different_room(self):
+        person = self.facility.all_persons[0]
+        self.facility.create_room('office', 'grey')
+        self.facility.reallocate_person(person.identifier, 'grey')
+        self.assertEqual(person.current_office.room_name, 'grey')
 
-    def test_reallocate_person(self):
-
-        # Assert fellow allocated to new room
-        room = LivingSpace('oculus')
-        new_staff = Staff('Dennis', 'Mwangi')
-        room.persons_allocated.append(new_staff)
-        new_staff.current_occupancy.append(room)
-
-        self.assertIn(new_staff, room.persons_allocated, msg='person added to new room' )
-        self.assertIn(room, new_staff.current_occupancy, msg='room has a person')
-
-        # Assert room not found
-        self.assertNotIn(room, self.facility.all_rooms, msg='Room not found')
-
-        # assert person not found
-        self.assertNotIn(new_staff, self.facility.all_persons, msg='person not found')
-
-        # Assert fellow is allocated to a living space
-        self.assertIn(new_staff, room.persons_allocated)
-
-        # Assert print fellow allocated to a living space
-        # self.assertEqual(new_fellow, room.fellows_allocated[0], msg="Fellow not assigned a living space")
-
-        # remove fellow from living space
-        room.persons_allocated.remove(new_staff)
-
-        # reallocate fellow to office
-        room2 = Office('Narnia')
-        room2.persons_allocated.append(new_staff)
-
-        # Assert fellow is not in living space
-        self.assertNotIn(new_staff, room.persons_allocated, msg="person does not exist in Living space")
-
-        # Assert fellow has been reallocated to an office
-        self.assertIn(new_staff, room2.persons_allocated, msg="person added to Office")
-
-    def test_load_people(self):
-        pass
-
-        # Amity.load_people('upload.txt')
-        # self.assertEqual(len(Amity.all_persons), 7)
-        # self.assertEqual(len(Amity.fellows), 4)
-        # self.assertEqual(len(Amity.staff), 3)
-
-    def test_save_state(self):
-        pass
+    def test_reallocation_to_the_same_room(self):
+        person = self.facility.all_persons[0]
+        return_message = self.facility.reallocate_person(person.identifier, person.current_office)
+        self.assertEqual("Reallocations cannot be done to the same room!", return_message)
 
 
-# if __name__ == '__main__':
-#     unittest.main()
+    def test_room_is_filled(self):
+        self.assertEqual('Room is Filled to capacity!',
+                         self.facility.reallocate_person())
 
+    def test_data_successfully_exported_to_database(self):
+        self.assertEqual('Data successfully exported to Database',
+                         self.facility.save_state())
 
-
-
-
-# ruby = LivingSpace("Ruby", "Living Space")
-# ruby.fellows_allocated
-
-
-
-
-
-
-
-
-
-
-
-
+    def test_data_loaded_from_database(self):
+        self.assertEqual('Successfully loaded data from the Database!',
+                         self.facility.load_state())
 
 
 
