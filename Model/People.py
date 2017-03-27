@@ -1,37 +1,51 @@
 
 class Person(object):
 
-    def __init__(self, first_name, last_name):
+    def __init__(self, first_name, last_name, current_office=None):
         self.first_name = first_name
         self.last_name = last_name
+        self.current_office = current_office
 
 
 class Staff(Person):
 
-    def __init__(self, first_name, last_name):
-        super(Staff, self).__init__(first_name, last_name)
-        self.designation = 'Staff'
-        self.current_occupancy = []
+    def __init__(self, first_name, last_name, current_occupancy=None):
+
+        super(Staff, self).__init__(first_name, last_name, current_occupancy)
         self.identifier = id(self)
 
+
     def __str__(self):
-        return str(self.identifier) + ' ' + self.first_name + ' ' + self.last_name + ' ' + self.designation + str(self.identifier)
+        return '{} {} {}'.format(self.identifier, self.first_name, self.last_name)
+
+    # def __repr__(self):
+    #     return str(self.identifier) + ' ' + self.first_name + ' ' + self.last_name
 
 class Fellow(Person):
 
-    def __init__(self, first_name, last_name, accommodation_request=None):
+    def __init__(self, first_name, last_name,
+                 current_occupancy=None, accommodation_request=None):
+
         super(Fellow, self).__init__(first_name, last_name)
         self.accommodation_request = accommodation_request
-        self.designation = 'Fellow'
-        self.current_occupancy = []
         self.identifier = id(self)
+        self.current_living = None
 
     def __str__(self):
-        return str(self.identifier) + ' ' + self.first_name + " " +  self.last_name + " " + self.designation
+        return '{} {} {}'.format(self.identifier, self.first_name,
+                                    self.last_name)
+
+    #
+    # def __repr__(self):
+    #     return str(self.identifier) + ' ' + self.first_name + ' ' + self.last_name
 
 
-#
+
 # d = Fellow('Dennis', 'Mwangi')
+# print(d)
+#
+# d = Staff('Dennis', 'Mwangi')
+#
 # print(d)
 
 
