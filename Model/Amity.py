@@ -16,10 +16,6 @@ class Amity(object):
     def create_room(self, room_type, room_name):
         """ Creates rooms in Amity """
 
-        # check if string
-        if not isinstance(room_type, str) and not isinstance(room_name, str):
-            raise TypeError('room type and room name must be a string!')
-
         # get a list of all rooms
         all_rooms = self.all_rooms['office'] + self.all_rooms['livingspace']
 
@@ -46,26 +42,24 @@ class Amity(object):
     def add_person(self, first_name, last_name, designation, accommodation_request='N'):
         """ Adds a person to the system and allocates the person to a random room"""
 
-        if not isinstance(first_name, str) and not isinstance(last_name, str):
-            raise TypeError('First Name and Last Name cannot be a number!')
-
         # add staff
         if designation.lower() == 'staff':
             staff = Staff(first_name, last_name)
-            print(first_name + ' added successfully! \n NB: Staff cannot be allocated a Living Space')
 
             # add staff to all persons list
             Amity.all_persons.append(staff)
+            print(first_name + ' added successfully! \n NB: Staff cannot be allocated a Living Space')
+
 
             # add staff to office
             self.allocate_office(staff)
 
         elif designation.lower() == 'fellow':
             fellow = Fellow(first_name, last_name, accommodation_request='N')
-            print(first_name + ' added successfully!')
 
             # add fellow to all persons list
             Amity.all_persons.append(fellow)
+            print(first_name + ' added successfully!')
 
             # add fellow to office
             self.allocate_office(fellow)
@@ -99,7 +93,7 @@ class Amity(object):
         random_office = choice(all_offices)
 
         # add office to person
-        person.current_occupancy = random_office
+        person.current_office = random_office
 
         # add person to office
         random_office.persons_allocated.append(person)
@@ -128,13 +122,14 @@ class Amity(object):
             random_living = choice(all_living)
 
             # add living spaces to person
-            person.current_occupancy = random_living
+            person.current_living = random_living
 
             # add person to living spaces
             random_living.persons_allocated.append(person)
 
     def reallocate_person(self, identifier, room_name):
         """ Reallocate the person with  person_identifier  to  new_room_name """
+
         room_to_reallocate = None
         previous_room = None
         person_found = None
@@ -147,6 +142,10 @@ class Amity(object):
 
         if room_name not in rooms_names:
             return "Room not found!"
+
+        # check identifier is an integer
+        if isinstance(identifier, str):
+            return "The identifier must be an integer"
 
         # check person exists
         person_found = next((person for person in Amity.all_persons if person.identifier == int(identifier)), None)
@@ -165,16 +164,28 @@ class Amity(object):
             return "Room is Filled to capacity!"
 
         # Check Staff cannot be allocated to a living Space
-        if isinstance(person_found, Staff) and  isinstance(room_to_reallocate, LivingSpace):
+        if isinstance(person_found, Staff) and isinstance(room_to_reallocate, LivingSpace):
             return "Allocating Staff to living space not Allowed!"
 
         # pick the previous room a person was in
-        previous_room = person_found.current_occupancy
-        print(previous_room)
+        if isinstance(room_to_reallocate, Office):
+            previous_room = person_found.current_office
+        else:
+            previous_room = person_found.current_living
 
         # check if person is moving to the same room type
-        if previous_room == room_to_reallocate:
+        if previous_room.room_name == room_to_reallocate.room_name:
             return "Reallocations cannot be done to the same room!"
+
+        #update the persons new office
+        if isinstance(room_to_reallocate, Office):
+            person_found.current_office = room_to_reallocate
+
+        #update persons living space if fellow
+        if isinstance(person_found, Fellow) and isinstance(room_to_reallocate, LivingSpace):
+            person_found.current_living = room_to_reallocate
+        else:
+            return "You cannot reallocate a Fellow from a living space to an Office!"
 
         # remove person from room he was in
         previous_room.persons_allocated.remove(person_found)
@@ -295,7 +306,7 @@ class Amity(object):
         if not room:
             return 'room name not found'
 
-        room_details = room_name
+        room_details = room_name, '\n'
         room_details += '-' *15 + '\n'
 
         room_details += '\n'.join(str(person) for person in room.persons_allocated)
@@ -337,9 +348,8 @@ class Amity(object):
 
         return 'Successfully loaded data from the Database!'
 
-
 dojo = Amity()
-dojo.create_room('office','yellow')
+dojo.create_room('office', 'yellow')
 dojo.create_room('office', 'white')
 dojo.create_room('office', 'red')
 
@@ -348,10 +358,12 @@ dojo.create_room('livingspace', 'hog')
 dojo.create_room('livingspace', 'narnia')
 
 
-dojo.add_person('dennis','mwangi','fellow','y')
-dojo.add_person('lio','githinji', 'fellow', 'y' )
-dojo.add_person('mbarak', 'mbigo','staff')
-dojo.add_person('jose','jere', 'staff')
+dojo.add_person('dennis', 'mwangi', 'fellow', 'y')
+dojo.add_person('lio', 'githinji', 'fellow', 'y' )
+dojo.add_person('mbarak', 'mbigo', 'staff')
+dojo.add_person('jose', 'jere', 'staff')
 
-# dojo.save_state()
+
+dojo.save_state()
 dojo.load_state()
+
