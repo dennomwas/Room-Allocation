@@ -13,7 +13,8 @@ Usage:
     Amity load_people [<filename>]
     Amity print_allocations [-o=filename]
     Amity print_allocations [-o=filename]
-    Amity save_state [--db=sqlite_database]
+    Amity save_state <sqlite_database>
+    Amity load_state <sqlite_database>
 
 Options:
     -i, --interactive  Interactive Mode
@@ -34,6 +35,7 @@ def docopt_cmd(func):
     This decorator is used to simplify the try/except block and pass the result
     of the docopt parsing to the called action.
     """
+
     def fn(self, arg):
         try:
             opt = docopt(fn.__doc__, arg)
@@ -60,7 +62,7 @@ def docopt_cmd(func):
     return fn
 
 
-class MyInteractive (cmd.Cmd):
+class MyInteractive(cmd.Cmd):
     print('******************************************')
     intro = 'AMITY ROOM ALLOCATION SYSTEM! \n\n' + colored('[type help for a list of commands!]', 'yellow')
     print('******************************************')
@@ -83,7 +85,7 @@ class MyInteractive (cmd.Cmd):
     def do_add_person(self, arg):
         """Usage: add_person <first_name> <last_name> (fellow|staff) [<wants_accommodation>]"""
 
-        designation = 'fellow'if arg['fellow'] else 'staff'
+        designation = 'fellow' if arg['fellow'] else 'staff'
         accommodation = arg['<wants_accommodation>'] or 'N'
 
         self.amity.add_person(arg['<first_name>'],
@@ -120,16 +122,22 @@ class MyInteractive (cmd.Cmd):
 
     @docopt_cmd
     def do_save_state(self, arg):
-        """ Usage save_state [--db=sqlite_database] """
+        """ Usage: save_state <sqlite_database> """
+        # print(arg)
+
+        print(self.amity.save_state(arg['<sqlite_database>']))
 
     @docopt_cmd
     def do_load_state(self, arg):
-        """ Usage load_state <sqlite_database> """
+        """ Usage: load_state <sqlite_database> """
+
+        print(self.amity.load_state(arg['<sqlite_database>']))
 
     def do_quit(self, arg):
         """Quits out of Interactive Mode."""
         print('Good Bye!')
         exit()
+
 
 opt = docopt(__doc__, sys.argv[1:])
 
