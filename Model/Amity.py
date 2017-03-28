@@ -1,6 +1,9 @@
-import sqlite3
-from random import choice
 import pickle
+import sqlite3
+from os import remove
+from os import path
+from sqlite3 import Error
+from random import choice
 
 from Model.People import Staff, Fellow
 from Model.Rooms import Office, LivingSpace
@@ -250,7 +253,8 @@ class Amity(object):
 
         if filename:
 
-            with open(filename, 'w') as export_file:
+            path = './files/'
+            with open(path + filename, 'w') as export_file:
                 for room in all_rooms:
                     export_file.write(room.room_name + '\n')
                     export_file.write('---------------- \n')
@@ -273,7 +277,8 @@ class Amity(object):
 
         if filename:
             try:
-                with open(filename, 'w') as export_file:
+                path = './files/'
+                with open(path + filename, 'w') as export_file:
                     for person in Amity.unallocated_office:
                         export_file.write('UNALLOCATED TO OFFICES \n')
                         export_file.write('-------------------------\n')
@@ -312,9 +317,10 @@ class Amity(object):
         room_details += '\n'.join(str(person) for person in room.persons_allocated)
         return room_details
 
-    def save_state(self):
+    def save_state(self, db_file):
 
-        db_connect = sqlite3.connect('amity_db')
+        path = './database/'
+        db_connect = sqlite3.connect(path + db_file)
         conn = db_connect.cursor()
 
         conn.execute("CREATE TABLE IF NOT EXISTS all_data "
@@ -334,36 +340,45 @@ class Amity(object):
 
         return 'Data successfully exported to Database'
 
-    def load_state(self):
+    def load_state(self, db_file):
 
-        db_connect = sqlite3.connect('amity_db')
-        conn = db_connect.cursor()
-        conn.execute("SELECT * FROM all_data WHERE dataID = (SELECT MAX(dataID) FROM all_data)")
-        data = conn.fetchone()
+        try:
+            path = './database/'
+            db_connect = sqlite3.connect(path + db_file)
+            conn = db_connect.cursor()
 
-        Amity.all_rooms = pickle.loads(data[1])
-        Amity.all_persons = pickle.loads(data[2])
-        Amity.unallocated_office = pickle.loads(data[3])
-        Amity.unallocated_livingspace = pickle.loads(data[4])
+            conn.execute("SELECT * FROM all_data WHERE dataID = (SELECT MAX(dataID) FROM all_data)")
+            data = conn.fetchone()
 
-        return 'Successfully loaded data from the Database!'
+            Amity.all_rooms = pickle.loads(data[1])
+            Amity.all_persons = pickle.loads(data[2])
+            Amity.unallocated_office = pickle.loads(data[3])
+            Amity.unallocated_livingspace = pickle.loads(data[4])
 
-dojo = Amity()
-dojo.create_room('office', 'yellow')
-dojo.create_room('office', 'white')
-dojo.create_room('office', 'red')
+            db_connect.close()
+            return 'Successfully loaded data from the Database!'
 
-dojo.create_room('livingspace', 'oculus')
-dojo.create_room('livingspace', 'hog')
-dojo.create_room('livingspace', 'narnia')
-
-
-dojo.add_person('dennis', 'mwangi', 'fellow', 'y')
-dojo.add_person('lio', 'githinji', 'fellow', 'y' )
-dojo.add_person('mbarak', 'mbigo', 'staff')
-dojo.add_person('jose', 'jere', 'staff')
+        except Error:
+            remove(path + db_file)
+            return "Database not found, Please check the name and try again!"
 
 
-dojo.save_state()
-dojo.load_state()
+# dojo = Amity()
+# dojo.create_room('office', 'yellow')
+# dojo.create_room('office', 'white')
+# dojo.create_room('office', 'red')
+#
+# dojo.create_room('livingspace', 'oculus')
+# dojo.create_room('livingspace', 'hog')
+# dojo.create_room('livingspace', 'narnia')
+#
+#
+# dojo.add_person('dennis', 'mwangi', 'fellow', 'y')
+# dojo.add_person('lio', 'githinji', 'fellow', 'y' )
+# dojo.add_person('mbarak', 'mbigo', 'staff')
+# dojo.add_person('jose', 'jere', 'staff')
+
+
+# print(dojo.save_state())
+# dojo.load_state()
 
