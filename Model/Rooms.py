@@ -1,5 +1,9 @@
-class Room(object):
+from abc import ABCMeta, abstractmethod
 
+
+class Room(metaclass=ABCMeta):
+
+    @abstractmethod
     def __init__(self, room_name):
         self.room_name = room_name
 
@@ -11,9 +15,11 @@ class Office(Room):
 
         super(Office, self).__init__(room_name)
         self.persons_allocated = []
+        self.room_type = 'OFFICE'
 
     def __str__(self):
         return self.room_name
+
 
 
 class LivingSpace(Room):
@@ -23,6 +29,7 @@ class LivingSpace(Room):
 
         super(LivingSpace, self).__init__(room_name)
         self.persons_allocated = []
+        self.room_type = 'LIVINGSPACE'
 
     def __str__(self):
         return self.room_name
