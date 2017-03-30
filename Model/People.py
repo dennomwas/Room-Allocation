@@ -13,9 +13,9 @@ class Person(metaclass=ABCMeta):
 
 class Staff(Person):
 
-    def __init__(self, *args, **kwarg):
+    def __init__(self, *args, **kwargs):
 
-        super(Staff, self).__init__(*args, **kwarg)
+        super(Staff, self).__init__(*args, **kwargs)
         self.person_type = "STAFF"
 
     def __str__(self):

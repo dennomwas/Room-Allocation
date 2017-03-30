@@ -123,7 +123,6 @@ class MyInteractive(cmd.Cmd):
     @docopt_cmd
     def do_save_state(self, arg):
         """ Usage: save_state <sqlite_database> """
-        # print(arg)
 
         print(self.amity.save_state(arg['<sqlite_database>']))
 

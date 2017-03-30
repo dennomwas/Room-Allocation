@@ -17,12 +17,16 @@ class Amity(object):
     unallocated_livingspace = []
 
     def create_room(self, room_type, room_name):
-        """ Creates rooms in Amity """
 
-        # get a list of all rooms
+        """ Creates rooms in Amity
+         get a list of all rooms
+         check room exists
+         create an office
+         create a livingspace
+        
+        """
         all_rooms = self.all_rooms['office'] + self.all_rooms['livingspace']
 
-        # check room exists
         check_name = [room.room_name for room in all_rooms if room.room_name == room_name]
 
         if check_name:
@@ -32,7 +36,6 @@ class Amity(object):
 
         new_room = room_mapping[room_type](room_name)
 
-        # add an office and a livingspace
         if room_type.lower() == "office":
             Amity.all_rooms['office'].append(new_room)
 
@@ -43,168 +46,192 @@ class Amity(object):
             return room_name + ' created Successfully!'
 
     def add_person(self, first_name, last_name, designation, accommodation_request='N'):
-        """ Adds a person to the system and allocates the person to a random room"""
 
-        # add staff
+        """ Adds a person to the system and allocates the person to a random room
+        add staff
+        add staff to all persons list
+        add staff to office
+        add fellow to all persons list
+        add fellow to office
+        add fellow to livingspace if accommodation request is yes
+        
+        """
         if designation.lower() == 'staff':
             staff = Staff(first_name, last_name)
 
-            # add staff to all persons list
             Amity.all_persons.append(staff)
             print(first_name + ' added successfully! \n NB: Staff cannot be allocated a Living Space')
 
-
-            # add staff to office
             self.allocate_office(staff)
 
         elif designation.lower() == 'fellow':
             fellow = Fellow(first_name, last_name, accommodation_request='N')
 
-            # add fellow to all persons list
             Amity.all_persons.append(fellow)
             print(first_name + ' added successfully!')
 
-            # add fellow to office
             self.allocate_office(fellow)
 
             if accommodation_request.lower() == 'y':
 
-                # add fellow to livingspace
-                self.allocate_living(fellow)
+                self.allocate_livingspace(fellow)
 
     def allocate_office(self, person):
 
-        # office does not exist add to unallocated list
+        """ This is a helper function to add person to office
+        if there is no office in the system 
+            add person to unallocated_office list
+        check for empty office
+        if none exist 
+            return that all offices are full
+            add person to unallocated_office list
+        get a list of all offices
+        get a random office
+        make random office the persons current office
+        add person to the persons_allocated list for the office
+        
+        """
         if not Amity.all_rooms['office']:
             Amity.unallocated_office.append(person)
             return 'There is no office in the system!'
 
-        # check for empty offices
         empty_offices = [all(office for office in Amity.all_rooms['office']
                              if len(office.persons_allocated) == office.max_capacity)]
 
-        # no empty office add to unallocated list
         if not empty_offices:
             Amity.unallocated_office.append(person)
             return 'All offices are full!'
 
-        # get a list of all offices
         all_offices = [office for office in Amity.all_rooms['office']
                        if len(office.persons_allocated) < office.max_capacity]
 
-        # get a random office
         random_office = choice(all_offices)
 
-        # add office to person
         person.current_office = random_office
 
-        # add person to office
         random_office.persons_allocated.append(person)
 
-    def allocate_living(self, person):
+    def allocate_livingspace(self, person):
 
-            # living space does not exist add to unallocated list
-            if not Amity.all_rooms['livingspace']:
-                Amity.unallocated_livingspace.append(person)
-                return 'The living space does not exist!'
+        """This is a helper function to add person to livingspaces
+        if living space does not exist 
+            add to unallocated list
+            assert that livingspace does not exist
+        check for empty living space
+        if there's no empty living space 
+            add to unallocated list
+            assert livingspace is full
+        get a random livingspace
+        make random the livingspace the persons current livingspace
+        add person to the persons_allocated list for livingspace
+        
+        """
+        if not Amity.all_rooms['livingspace']:
+            Amity.unallocated_livingspace.append(person)
+            return 'The living space does not exist!'
 
-            # check for empty living space
-            empty_livingspace = [all(livingspace for livingspace in Amity.all_rooms['livingspace']
-                                     if len(livingspace.persons_allocated) == livingspace.max_capacity)]
+        empty_livingspace = [all(livingspace for livingspace in Amity.all_rooms['livingspace']
+                                 if len(livingspace.persons_allocated) == livingspace.max_capacity)]
 
-            # no empty living space add to unallocated list
-            if not empty_livingspace:
-                Amity.unallocated_livingspace.append(person)
-                return 'All living spaces are full!'
+        if not empty_livingspace:
+            Amity.unallocated_livingspace.append(person)
+            return 'All living spaces are full!'
 
-            # get a list of all living spaces
-            all_living = [livingspace for livingspace in Amity.all_rooms['livingspace']
-                          if len(livingspace.persons_allocated) < livingspace.max_capacity]
+        all_living = [livingspace for livingspace in Amity.all_rooms['livingspace']
+                      if len(livingspace.persons_allocated) < livingspace.max_capacity]
 
-            # get a random office
-            random_living = choice(all_living)
+        random_living = choice(all_living)
 
-            # add living spaces to person
-            person.current_living = random_living
+        person.current_living = random_living
 
-            # add person to living spaces
-            random_living.persons_allocated.append(person)
+        random_living.persons_allocated.append(person)
 
     def reallocate_person(self, identifier, room_name):
-        """ Reallocate the person with  person_identifier  to  new_room_name """
 
+        """ Reallocate the person with  person_identifier  to  new_room_name
+         
+        get a list of all rooms.
+        check for available rooms.
+        if there's no room assert room not found.
+        check person exists.
+        if not return person not found.
+        pick room to reallocate.
+        if not return room to reallocate not found.
+        Check room still has space.
+        if not return room is filled to capacity.
+        Check Staff cannot be allocated to a living Space.
+        if not return allocating space to livingspace not allowed.
+        pick the previous room a person was in.
+        check if person is moving to the same room type.
+        if not return reallocations cannot be done to same room types.
+        update the persons new office.
+        update the persons new livingspace if fellow.
+        check if person is fellow and currently in a livingspace.
+        return fellow in livingspace cannot move to office.
+        remove person from room he was in.
+        assign person to a new room.
+        
+        """
         room_to_reallocate = None
         previous_room = None
         person_found = None
 
-        # get a list of all rooms
         all_rooms = Amity.all_rooms['office'] + Amity.all_rooms['livingspace']
 
-        # check for available rooms
         rooms_names = [room.room_name for room in all_rooms]
 
         if room_name not in rooms_names:
             return "Room not found!"
 
-        # check identifier is an integer
-        if isinstance(identifier, str):
-            return "The identifier must be an integer"
-
-        # check person exists
         person_found = next((person for person in Amity.all_persons if person.identifier == int(identifier)), None)
 
         if not person_found:
             return "Person with id" + " " + str(identifier) + " not Found!"
 
-        # pick room to reallocate
         room_to_reallocate = next((room for room in all_rooms if room.room_name == room_name), None)
 
         if not room_to_reallocate:
             return "Room to reallocate not Found!"
 
-        # Check room still has space
         if len(room_to_reallocate.persons_allocated) == room_to_reallocate.max_capacity:
             return "Room is Filled to capacity!"
 
-        # Check Staff cannot be allocated to a living Space
         if isinstance(person_found, Staff) and isinstance(room_to_reallocate, LivingSpace):
-            return "Allocating Staff to living space not Allowed!"
+            return "Reallocating Staff to Living space not Allowed!"
 
-        # pick the previous room a person was in
+        if isinstance(person_found, Fellow) and person_found.current_living:
+            if room_to_reallocate.room_type == 'OFFICE':
+                return "Reallocating Fellow in Living space to Office not Allowed!"
+
         if isinstance(room_to_reallocate, Office):
             previous_room = person_found.current_office
         else:
             previous_room = person_found.current_living
 
-        # check if person is moving to the same room type
         if previous_room.room_name == room_to_reallocate.room_name:
-            return "Reallocations cannot be done to the same room!"
+            return "Reallocations cannot be done to the same room or Person is already in the room!"
 
-        #update the persons new office
         if isinstance(room_to_reallocate, Office):
             person_found.current_office = room_to_reallocate
 
-        #update persons living space if fellow
-        if isinstance(person_found, Fellow) and isinstance(room_to_reallocate, LivingSpace):
+        if isinstance(person_found, Fellow):
             person_found.current_living = room_to_reallocate
-        else:
-            return "You cannot reallocate a Fellow from a living space to an Office!"
 
-        # remove person from room he was in
         previous_room.persons_allocated.remove(person_found)
 
-        # assign person to a new room
         room_to_reallocate.persons_allocated.append(person_found)
         return person_found.first_name + ' reallocated to ' + str(room_to_reallocate) + ' successfully!'
 
     def load_people(self, filename):
-        """ Adds people to rooms from a txt file """
 
-        # check if filename is a string
+        """ Adds people to rooms from a txt file 
+        check if filename is a string
+        get details from the text file
+        
+        """
         if not isinstance(filename, str):
-            raise TypeError("File name cannot be a number!")
+            return "Please check your file name and try again!"
 
-        # get details from the text file
         try:
             with open(filename, 'r') as persons_file:
                 persons = persons_file.readlines()
@@ -216,7 +243,7 @@ class Amity(object):
                     designation = person_details[2]
                     accommodation = person_details[-1]
 
-                    if accommodation.lower() == 'Y':
+                    if accommodation.lower() == 'y':
                         self.add_person(first_name, last_name, designation, accommodation)
                     else:
                         self.add_person(first_name, last_name, designation, accommodation)
@@ -229,9 +256,14 @@ class Amity(object):
             return e
 
     def print_allocations(self, filename=None):
-        """ Prints a list of allocations onto the screen """
 
-        # get a list of all rooms
+        """ Prints a list of allocations onto the screen 
+        get a list of all rooms
+        display allocated offices
+        display allocated livingspaces
+        export allocations to a text file
+        
+        """
         all_rooms = self.all_rooms['office'] + self.all_rooms['livingspace']
 
         print('\n', 'OFFICES')
@@ -239,7 +271,8 @@ class Amity(object):
             print('\n', room.room_name)
             print('---------------------')
             if room.max_capacity > 0:
-                print('\n'.join(str(person.identifier) + ' ' + person.first_name + ' ' + person.last_name
+                print('\n'.join(str(person.identifier) + ', ' + person.first_name + ', '
+                                + person.last_name + ', ' + person.person_type
                                 for person in room.persons_allocated))
 
         print('\n', 'LIVING SPACES')
@@ -248,7 +281,8 @@ class Amity(object):
             print('---------------------')
             if room.max_capacity > 0:
 
-                print('\n'.join(str(person.identifier) + ' ' + person.first_name + ' ' + person.last_name
+                print('\n'.join(str(person.identifier) + ', ' + person.first_name + ', '
+                                + person.last_name + ', ' + person.person_type
                                 for person in room.persons_allocated))
 
         if filename:
@@ -259,19 +293,24 @@ class Amity(object):
                     export_file.write(room.room_name + '\n')
                     export_file.write('---------------- \n')
                     if room.max_capacity > 0:
-                        export_file.write('\n'.join(str(person.identifier) + ' ' +
-                                                    person.first_name + ' ' + person.last_name
+                        export_file.write('\n'.join(str(person.identifier) + ', ' +
+                                                    person.first_name + ', ' + person.last_name
                                                     for person in room.persons_allocated)+'\n\n')
                 return 'Successfully exported room allocations to ' + filename
 
     def print_unallocated(self, filename=None):
-        """ Prints a list of unallocated people to the screen """
 
-        print('UNALLOCATED TO OFFICES')
+        """ Prints a list of unallocated people to the screen 
+        display unallocated offices
+        display unallocated livingspaces
+        export all to a text file
+        
+        """
+        print('\n UNALLOCATED TO OFFICES')
         print('------------------------')
         print('\n'.join(str(person) for person in Amity.unallocated_office), '\n')
 
-        print('UNALLOCATED TO LIVING SPACE')
+        print('\n UNALLOCATED TO LIVING SPACE')
         print('----------------------------')
         print('\n'.join(str(person) for person in Amity.unallocated_livingspace), '\n')
 
@@ -301,23 +340,34 @@ class Amity(object):
                 return 'Something went wrong!'
 
     def print_room(self, room_name):
-        """ Prints the names of all the people in the room_name  on the screen"""
 
-        # get a list of all rooms
+        """ Prints the names of all the people in the room_name  on the screen
+        get a list of all rooms
+        check if room name exists
+        print the room details
+        
+        """
         all_rooms = self.all_rooms['office'] + self.all_rooms['livingspace']
         room = next((room for room in all_rooms if room.room_name == room_name), None)
 
-        # check if room name exists
         if not room:
             return 'room name not found'
 
-        room_details = room_name, '\n'
-        room_details += '-' *15 + '\n'
+        print('\n', room_name)
+        print('--------------------------')
 
-        room_details += '\n'.join(str(person) for person in room.persons_allocated)
-        return room_details
+        print('\n'.join(str(person) for person in room.persons_allocated) + '\n\n')
 
     def save_state(self, db_file):
+
+        """ Persists all the data stored in the app to an SQLite database
+        set the directory path
+        connect to the database
+        create a table if none exists and push the data to it
+        save all the data into the database
+        close the database connection
+
+        """
 
         path = './database/'
         db_connect = sqlite3.connect(path + db_file)
@@ -342,6 +392,14 @@ class Amity(object):
 
     def load_state(self, db_file):
 
+        """ Loads data from a database into the application
+        set the directory path
+        connect to the database
+        select all data from the database table
+        load the data into the application
+        close the database connection
+        
+        """
         try:
             path = './database/'
             db_connect = sqlite3.connect(path + db_file)
@@ -361,24 +419,3 @@ class Amity(object):
         except Error:
             remove(path + db_file)
             return "Database not found, Please check the name and try again!"
-
-
-# dojo = Amity()
-# dojo.create_room('office', 'yellow')
-# dojo.create_room('office', 'white')
-# dojo.create_room('office', 'red')
-#
-# dojo.create_room('livingspace', 'oculus')
-# dojo.create_room('livingspace', 'hog')
-# dojo.create_room('livingspace', 'narnia')
-#
-#
-# dojo.add_person('dennis', 'mwangi', 'fellow', 'y')
-# dojo.add_person('lio', 'githinji', 'fellow', 'y' )
-# dojo.add_person('mbarak', 'mbigo', 'staff')
-# dojo.add_person('jose', 'jere', 'staff')
-
-
-# print(dojo.save_state())
-# dojo.load_state()
-
