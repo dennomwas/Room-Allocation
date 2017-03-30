@@ -1,0 +1,10 @@
+#
+# Requirements for Room Allocation system.
+#
+
+python==3.6.0
+six==1.10.0
+coverage==4.3.4
+docopt==0.6.2
+termcolor==1.1.0
+
