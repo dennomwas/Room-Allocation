@@ -18,7 +18,8 @@ class Office(Room):
         self.room_type = 'OFFICE'
 
     def __str__(self):
-        return self.room_name
+        return '{} {}'.format(self.room_name,
+                              self.room_type)
 
 
 
@@ -32,4 +33,5 @@ class LivingSpace(Room):
         self.room_type = 'LIVINGSPACE'
 
     def __str__(self):
-        return self.room_name
+        return '{} {}'.format(self.room_name,
+                              self.room_type)
