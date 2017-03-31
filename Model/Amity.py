@@ -116,11 +116,11 @@ class Amity(object):
         """This is a helper function to add person to livingspaces
         if living space does not exist 
             add to unallocated list
-            assert that livingspace does not exist
+            return livingspace does not exist
         check for empty living space
         if there's no empty living space 
             add to unallocated list
-            assert livingspace is full
+            return livingspace is full
         get a random livingspace
         make random the livingspace the persons current livingspace
         add person to the persons_allocated list for livingspace
@@ -170,6 +170,8 @@ class Amity(object):
         return fellow in livingspace cannot move to office.
         remove person from room he was in.
         assign person to a new room.
+        if person in unallocated_office move to available office
+        if person in unallocated_living move to available livingspace
         
         """
         room_to_reallocate = None
@@ -208,19 +210,35 @@ class Amity(object):
         else:
             previous_room = person_found.current_living
 
-        if previous_room.room_name == room_to_reallocate.room_name:
-            return "Reallocations cannot be done to the same room or Person is already in the room!"
+        if previous_room:
 
-        if isinstance(room_to_reallocate, Office):
-            person_found.current_office = room_to_reallocate
+            if previous_room == room_to_reallocate:
+                return "Reallocations cannot be done to the same room or Person is already in the room!"
 
-        if isinstance(person_found, Fellow):
-            person_found.current_living = room_to_reallocate
+            if isinstance(room_to_reallocate, Office):
+                person_found.current_office = room_to_reallocate
 
-        previous_room.persons_allocated.remove(person_found)
+            if isinstance(person_found, Fellow):
+                person_found.current_living = room_to_reallocate
 
-        room_to_reallocate.persons_allocated.append(person_found)
-        return person_found.first_name + ' reallocated to ' + str(room_to_reallocate) + ' successfully!'
+            previous_room.persons_allocated.remove(person_found)
+
+            room_to_reallocate.persons_allocated.append(person_found)
+            return person_found.first_name + ' reallocated to ' + str(room_to_reallocate) + ' successfully!'
+
+        if person_found in Amity.unallocated_office and isinstance(room_to_reallocate, Office):
+
+            room_to_reallocate.persons_allocated.append(person_found)
+
+            Amity.unallocated_office.remove(person_found)
+            return person_found.first_name + ' allocated to ' + str(room_to_reallocate) + ' successfully!'
+
+        if person_found in Amity.unallocated_livingspace and isinstance(room_to_reallocate, LivingSpace):
+
+            room_to_reallocate.persons_allocated.append(person_found)
+
+            Amity.unallocated_livingspace.remove(person_found)
+            return person_found.first_name + '  allocated to ' + str(room_to_reallocate) + ' successfully!'
 
     def load_people(self, filename):
 
