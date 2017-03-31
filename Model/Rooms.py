@@ -22,7 +22,6 @@ class Office(Room):
                               self.room_type)
 
 
-
 class LivingSpace(Room):
     max_capacity = 4
 
