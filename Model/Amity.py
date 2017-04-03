@@ -270,8 +270,8 @@ class Amity(object):
         except FileNotFoundError:
             return 'File not found, Please try again...'
 
-        except Exception as e:
-            return e
+        except Exception as error:
+            return error
 
     def print_allocations(self, filename=None):
 
@@ -288,7 +288,7 @@ class Amity(object):
         for room in Amity.all_rooms['office']:
             print('\n', room.room_name)
             print('---------------------')
-            if room.max_capacity > 0:
+            if room.max_capacity:
                 print('\n'.join(str(person.identifier) + ', ' + person.first_name + ', '
                                 + person.last_name + ', ' + person.person_type
                                 for person in room.persons_allocated))
@@ -297,7 +297,7 @@ class Amity(object):
         for room in Amity.all_rooms['livingspace']:
             print('\n', room.room_name)
             print('---------------------')
-            if room.max_capacity > 0:
+            if room.max_capacity:
 
                 print('\n'.join(str(person.identifier) + ', ' + person.first_name + ', '
                                 + person.last_name + ', ' + person.person_type
